@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"
+          integrity="sha512-EZLkOqwILORob+p0BXZc+Vm3RgJBOe1Iq/0fiI7r/wJgzOFZMlsqTa29UEl6v6U6gsV4uIpsNZoV32YZqrCRCQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <title>Weather</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body style="text-align:center;">
+<h1>Weather</h1>
+
+<form id="weatherForm" onsubmit="event.preventDefault(); getWeather()">
+    <label for="cityInput">Enter city:</label>
+    <input type="text" id="cityInput" name="city" required/>
+    <button type="submit">Get Weather</button>
+</form>
+
+<div id="weatherResult"></div>
+<div id="map"></div>
+<div id="airPollutionResult"></div>
+
+<div id="youtubePlayer"></div>
+
+<script>
+    // Weather
+    async function getWeather() {
+        const cityInput = document.getElementById('cityInput');
+        const cityName = cityInput.value.trim();
+
+        if (!cityName) {
+            alert('Please enter a city name');
+            return;
+        }
+
+        const response = await fetch(`http://localhost:3000/weather/${cityName}`);
+
+        if (!response.ok) {
+            const errorMessage = await response.text();
+            alert(`Error: ${errorMessage}`);
+            return;
+        }
+
+        const data = await response.json();
+
+        const weatherResult = document.getElementById('weatherResult');
+        weatherResult.innerHTML = `<p>Weather: ${data.weather.description}</p>
+                                 <p>Temperature: ${data.weather.temperature.toFixed(2)} °C</p>`;
+
+        // Load YouTube video based on the provided link
+        const youtubeLink = 'https://www.youtube.com/watch?v=KJwYBJMSbPI&pp=ygUGbmF0dXJl'; // Replace with your YouTube video link
+        const videoId = getYouTubeVideoId(youtubeLink);
+        if (videoId) {
+            loadYouTubeVideo(videoId);
+        } else {
+            alert('Invalid YouTube video link');
+        }
+
+
+        // Display the map
+        const mapDiv = document.getElementById('map');
+        mapDiv.innerHTML = `<iframe width="600" height="400" frameborder="0" style="border:0"
+                         src="https://www.openstreetmap.org/export/embed.html?bbox=${data.weather.coordinates.longitude},${data.weather.coordinates.latitude},${data.weather.coordinates.longitude},${data.weather.coordinates.latitude}&layer=mapnik&marker=${data.weather.coordinates.latitude},${data.weather.coordinates.longitude}" allowfullscreen></iframe>`;
+
+        // Display air pollution information
+        const airPollutionResult = document.getElementById('airPollutionResult');
+        airPollutionResult.innerHTML = `<p>Air Quality Index (AQI): ${data.airPollution.aqi}</p>`;
+    }
+
+</script>
+
+<script>
+    // YouTube
+    let player;
+
+    // Function to initialize the YouTube player
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('youtubePlayer', {
+            height: '360',
+            width: '640',
+            videoId: '',  // Default empty value, will be updated dynamically
+            events: {
+                'onReady': onPlayerReady,
+            },
+        });
+    }
+
+    // Function to handle when the YouTube player is ready
+    function onPlayerReady(event) {
+        // Optional: You can add logic here when the player is ready
+    }
+
+    // Function to load a new video into the player
+    function loadYouTubeVideo(videoId) {
+        if (player && player.loadVideoById) {
+            player.loadVideoById(videoId);
+        } else {
+            // Retry loading the video after a short delay
+            setTimeout(() => loadYouTubeVideo(videoId), 1000);
+        }
+    }
+
+    // Function to extract the video ID from a YouTube video link
+    function getYouTubeVideoId(url) {
+        const videoIdMatch = url.match(/[?&]v=([^?&]+)/);
+        return videoIdMatch ? videoIdMatch[1] : null;
+    }
+</script>
+</body>
+</html>
